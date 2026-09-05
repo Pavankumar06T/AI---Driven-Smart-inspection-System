@@ -1,5 +1,14 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
-const REASONING_API_BASE_URL = (import.meta.env.VITE_REASONING_API_BASE_URL || 'http://localhost:8001').replace(/\/$/, '');
+function formatUrl(url, fallback) {
+  const target = url || fallback;
+  if (!target.startsWith('http://') && !target.startsWith('https://')) {
+    return `https://${target}`.replace(/\/$/, '');
+  }
+  return target.replace(/\/$/, '');
+}
+
+const API_BASE_URL = formatUrl(import.meta.env.VITE_API_BASE_URL, 'http://localhost:8000');
+const REASONING_API_BASE_URL = formatUrl(import.meta.env.VITE_REASONING_API_BASE_URL, 'http://localhost:8001');
+
 
 
 export async function analyzeDocument(extractionOutput) {
