@@ -24,8 +24,9 @@ services:
         sync: false
 
   # 3. React Frontend Dashboard (Static Web Site)
-  - type: static
+  - type: web
     name: shram-sankalp-frontend
+    env: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
@@ -44,3 +45,4 @@ services:
           type: web
           name: shram-compliance-reasoning-backend
           property: host
+
