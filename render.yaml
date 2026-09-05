@@ -1,0 +1,43 @@
+# Render Infrastructure-as-Code (Blueprint) definition
+# Deploys Document Intelligence API, Compliance Reasoning API, and React Frontend on Render.com
+# Triggering automated multi-service build sync
+
+
+services:
+  # 1. Document Intelligence API (FastAPI - Port 8000)
+  - type: web
+    name: shram-doc-intel-backend
+    env: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  # 2. Compliance Reasoning API (FastAPI - Port 8001)
+  - type: web
+    name: shram-compliance-reasoning-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+
+  # 3. React Frontend Dashboard (Static Web Site)
+  - type: web
+    name: shram-sankalp-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+
+
+
