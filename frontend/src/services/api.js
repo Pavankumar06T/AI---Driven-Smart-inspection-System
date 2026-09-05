@@ -1,5 +1,6 @@
-const API_BASE_URL = 'http://localhost:8000';
-const REASONING_API_BASE_URL = 'http://localhost:8001';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+const REASONING_API_BASE_URL = (import.meta.env.VITE_REASONING_API_BASE_URL || 'http://localhost:8001').replace(/\/$/, '');
+
 
 export async function analyzeDocument(extractionOutput) {
   const response = await fetch(`${REASONING_API_BASE_URL}/analyze`, {
