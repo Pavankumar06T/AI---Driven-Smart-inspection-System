@@ -13,10 +13,16 @@ client = chromadb.PersistentClient(path="./chroma_db")
 embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
     model_name="all-MiniLM-L6-v2"
 )
-collection = client.get_collection(
-    name="compliance_rules",
-    embedding_function=embedding_fn,
-)
+
+try:
+    collection = client.get_collection(
+        name="compliance_rules",
+        embedding_function=embedding_fn,
+    )
+except Exception:
+    from build_index import build_index_main
+    collection = build_index_main()
+
 
 
 # LIMITATION: uses first-match by name. On multi-row/multi-worker documents, only the first matching row is checked per rule. Fine for establishment-level fields (registration_number, safety_committee_record) but under-checks per-worker fields (overtime_hours, gross_wages, etc.) on documents with multiple workers. Not fixed for hackathon scope — documented as a known next step.
