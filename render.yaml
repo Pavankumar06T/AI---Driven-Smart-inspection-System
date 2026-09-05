@@ -1,5 +1,7 @@
 # Render Infrastructure-as-Code (Blueprint) definition
 # Deploys Document Intelligence API, Compliance Reasoning API, and React Frontend on Render.com
+# Triggering automated multi-service build sync
+
 
 services:
   # 1. Document Intelligence API (FastAPI - Port 8000)
