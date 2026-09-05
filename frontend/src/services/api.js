@@ -1,18 +1,13 @@
 const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-const DEFAULT_API = isLocal ? 'http://localhost:8000' : 'https://shram-doc-intel-backend.onrender.com';
-const DEFAULT_REASONING_API = isLocal ? 'http://localhost:8001' : 'https://shram-compliance-reasoning-backend.onrender.com';
+const API_BASE_URL = isLocal 
+  ? 'http://localhost:8000' 
+  : 'https://shram-doc-intel-backend.onrender.com';
 
-function formatUrl(url, fallback) {
-  const target = (url && url !== 'undefined') ? url : fallback;
-  if (!target.startsWith('http://') && !target.startsWith('https://')) {
-    return `https://${target}`.replace(/\/$/, '');
-  }
-  return target.replace(/\/$/, '');
-}
+const REASONING_API_BASE_URL = isLocal 
+  ? 'http://localhost:8001' 
+  : 'https://shram-compliance-reasoning-backend.onrender.com';
 
-const API_BASE_URL = formatUrl(import.meta.env.VITE_API_BASE_URL, DEFAULT_API);
-const REASONING_API_BASE_URL = formatUrl(import.meta.env.VITE_REASONING_API_BASE_URL, DEFAULT_REASONING_API);
 
 
 

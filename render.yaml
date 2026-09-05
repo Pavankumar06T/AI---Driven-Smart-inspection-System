@@ -37,17 +37,7 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
-    envVars:
-      - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: shram-doc-intel-backend
-          property: host
-      - key: VITE_REASONING_API_BASE_URL
-        fromService:
-          type: web
-          name: shram-compliance-reasoning-backend
-          property: host
+
 
 
 
