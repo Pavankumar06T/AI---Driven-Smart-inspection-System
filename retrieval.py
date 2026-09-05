@@ -5,27 +5,9 @@ with semantic search (embeddings) as a fallback/booster.
 """
 
 import ast
-import chromadb
-from chromadb.utils import embedding_functions
 from models import ExtractionOutput
+from rules_data import RULES
 
-client = chromadb.PersistentClient(path="./chroma_db")
-embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-    model_name="all-MiniLM-L6-v2"
-)
-
-try:
-    collection = client.get_collection(
-        name="compliance_rules",
-        embedding_function=embedding_fn,
-    )
-except Exception:
-    from build_index import build_index_main
-    collection = build_index_main()
-
-
-
-# LIMITATION: uses first-match by name. On multi-row/multi-worker documents, only the first matching row is checked per rule. Fine for establishment-level fields (registration_number, safety_committee_record) but under-checks per-worker fields (overtime_hours, gross_wages, etc.) on documents with multiple workers. Not fixed for hackathon scope — documented as a known next step.
 def _get_field(extraction: ExtractionOutput, name: str):
     return next((field for field in extraction.fields if field.name == name), None)
 
@@ -50,10 +32,7 @@ def _matches(value, expected) -> bool:
 
 
 def _passes_structured_filter(applies_when: dict, extraction: ExtractionOutput) -> bool:
-    """Check whether the establishment profile satisfies a rule's
-    structured preconditions. Returns True if the rule *could* apply
-    (fields missing needed to decide => treated as 'possibly applies',
-    letting the reasoning engine's cannot_determine logic handle it)."""
+    """Check whether the establishment profile satisfies a rule's structured preconditions."""
     profile = extraction.establishment_profile
 
     if "min_headcount_hazardous" in applies_when:
@@ -87,22 +66,62 @@ def _passes_structured_filter(applies_when: dict, extraction: ExtractionOutput) 
 
 def retrieve_relevant_rules(extraction: ExtractionOutput, top_k: int = 8) -> list[dict]:
     profile = extraction.establishment_profile
+    field_names_set = {f.name for f in extraction.fields}
 
-    field_names = [f.name for f in extraction.fields]
-    query_text = (
-        f"Sector: {profile.sector}. State: {profile.state}. "
-        f"Extracted fields present: {', '.join(field_names)}."
-    )
+    # Attempt ChromaDB retrieval if installed and initialized
+    try:
+        import chromadb
+        from chromadb.utils import embedding_functions
+        client = chromadb.PersistentClient(path="./chroma_db")
+        embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name="all-MiniLM-L6-v2"
+        )
+        collection = client.get_collection(
+            name="compliance_rules",
+            embedding_function=embedding_fn,
+        )
+        field_names = [f.name for f in extraction.fields]
+        query_text = (
+            f"Sector: {profile.sector}. State: {profile.state}. "
+            f"Extracted fields present: {', '.join(field_names)}."
+        )
+        results = collection.query(
+            query_texts=[query_text],
+            n_results=top_k,
+        )
+        candidate_rules = []
+        for metadata in results["metadatas"][0]:
+            applies_when = ast.literal_eval(metadata["applies_when_json"])
+            if _passes_structured_filter(applies_when, extraction):
+                candidate_rules.append(metadata)
+        if candidate_rules:
+            return candidate_rules
+    except Exception:
+        pass
 
-    results = collection.query(
-        query_texts=[query_text],
-        n_results=top_k,
-    )
-
+    # Lightweight Rule Matching (Fast, zero PyTorch/ChromaDB memory overhead)
     candidate_rules = []
-    for metadata in results["metadatas"][0]:
-        applies_when = ast.literal_eval(metadata["applies_when_json"])
-        if _passes_structured_filter(applies_when, extraction):
-            candidate_rules.append(metadata)
+    for rule in RULES:
+        if not _passes_structured_filter(rule.applies_when, extraction):
+            continue
 
-    return candidate_rules
+        rule_deps = set(rule.field_dependencies)
+        overlap = len(field_names_set.intersection(rule_deps))
+
+        metadata = {
+            "check_id": rule.check_id,
+            "scenario": rule.scenario,
+            "title": rule.title,
+            "code": rule.code,
+            "section": rule.section,
+            "severity": rule.severity,
+            "violation_type": rule.violation_type,
+            "applies_when_json": str(rule.applies_when),
+            "field_dependencies_csv": ",".join(rule.field_dependencies),
+            "_score": overlap
+        }
+        candidate_rules.append(metadata)
+
+    # Sort candidates by relevance overlap and severity
+    candidate_rules.sort(key=lambda r: (r["_score"], r["severity"]), reverse=True)
+    return candidate_rules[:top_k]
