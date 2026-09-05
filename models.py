@@ -37,10 +37,10 @@ class ExtractionOutput(BaseModel):
     fields: list[ExtractedField]
 
     @model_validator(mode="after")
-    def validate_unique_field_names(self):
-        names = [field.name for field in self.fields]
-        if len(names) != len(set(names)):
-            raise ValueError("field names must be unique")
+    def validate_unique_field_ids(self):
+        ids = [field.field_id for field in self.fields]
+        if len(ids) != len(set(ids)):
+            raise ValueError("field_id values must be unique")
         return self
 
 

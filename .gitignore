@@ -1,6 +1,36 @@
+# Environment & Secrets
 .env
-venv/
+*.env
+backend/.env
+
+# Python
 __pycache__/
-.pytest_cache/
-chroma_db/
 *.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+venv/
+ENV/
+env/
+
+# Node & Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+.npm
+
+# Database & Storage Caches
+chroma_db/
+backend/storage/*.db
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Temporary Scratch & Screenshots
+scratch/
+*.png
+

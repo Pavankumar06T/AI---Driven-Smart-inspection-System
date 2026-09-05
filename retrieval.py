@@ -19,6 +19,7 @@ collection = client.get_collection(
 )
 
 
+# LIMITATION: uses first-match by name. On multi-row/multi-worker documents, only the first matching row is checked per rule. Fine for establishment-level fields (registration_number, safety_committee_record) but under-checks per-worker fields (overtime_hours, gross_wages, etc.) on documents with multiple workers. Not fixed for hackathon scope — documented as a known next step.
 def _get_field(extraction: ExtractionOutput, name: str):
     return next((field for field in extraction.fields if field.name == name), None)
 

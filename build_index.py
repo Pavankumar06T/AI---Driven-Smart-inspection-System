@@ -50,4 +50,4 @@ for rule in RULES:
 
 collection.add(documents=documents, metadatas=metadatas, ids=ids)
 
-print(f"Indexed {collection.count()} rules into ChromaDB ✅")
+print(f"Indexed {collection.count()} rules into ChromaDB successfully!")

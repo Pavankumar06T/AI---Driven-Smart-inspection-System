@@ -27,12 +27,19 @@ class LLMDecision(BaseModel):
     employer_action: str
     inspector_action: str
 
+from pathlib import Path
+
 load_dotenv()
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-MODEL_NAME = "gemini-3.6-flash"
+load_dotenv(Path(__file__).parent / "backend" / ".env")
+
+api_key = os.getenv("GEMINI_API_KEY") or ""
+client = genai.Client(api_key=api_key) if api_key else None
+MODEL_NAME = "gemini-2.5-flash"
 FALLBACK_MODEL_NAME = "gemini-2.5-flash"
 
 
+
+# LIMITATION: uses first-match by name. On multi-row/multi-worker documents, only the first matching row is checked per rule. Fine for establishment-level fields (registration_number, safety_committee_record) but under-checks per-worker fields (overtime_hours, gross_wages, etc.) on documents with multiple workers. Not fixed for hackathon scope — documented as a known next step.
 def _get_field_value(extraction: ExtractionOutput, field_name: str):
     """Find an extracted field by name; return the ExtractedField or None."""
     for f in extraction.fields:
@@ -121,8 +128,10 @@ def _call_gemini_with_retry(prompt: str, max_retries: int = 3, base_delay: float
     """Wraps the Gemini call with retry-on-failure logic. Retries on
     server overload (503) AND on transient network/connection errors —
     both are common and shouldn't crash the demo."""
-    last_error = None
+    if client is None:
+        raise ValueError("GEMINI_API_KEY is not configured")
 
+    last_error = None
     RETRYABLE_KEYWORDS = ("UNAVAILABLE", "503", "connection", "aborted", "timeout", "10053", "10054")
 
     for model_name in (MODEL_NAME, FALLBACK_MODEL_NAME):
